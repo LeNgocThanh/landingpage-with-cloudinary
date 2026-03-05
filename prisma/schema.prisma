@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"  
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("SUPABASE_DB_URL")
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  pricePerHour Float
+  capacity    Int
+  status      String   @default("available") // available, occupied, maintenance
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  images      RoomImage[]
+  amenities   RoomAmenity[]
+  bookings    Booking[]
+  timeSlots   TimeSlot[]
+}
+
+model RoomImage {
+  id          String   @id @default(cuid())
+  roomId      String
+  url         String
+  publicId    String
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model Amenity {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  icon        String?
+  createdAt   DateTime @default(now())
+  
+  rooms       RoomAmenity[]
+}
+
+model RoomAmenity {
+  id          String   @id @default(cuid())
+  roomId      String
+  amenityId   String
+  
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  amenity     Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  
+  @@unique([roomId, amenityId])
+}
+
+model TimeSlot {
+  id          String   @id @default(cuid())
+  roomId      String
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("available") // available, booked, blocked
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  booking     Booking?
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  roomId      String
+  timeSlotId  String   @unique
+  customerName String
+  customerPhone String
+  customerZalo String?
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("pending") // pending, confirmed, cancelled, completed
+  totalPrice  Float
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  timeSlot    TimeSlot @relation(fields: [timeSlotId], references: [id])
+}
+
+model Admin {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  email       String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Settings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  updatedAt   DateTime @updatedAt
+}
